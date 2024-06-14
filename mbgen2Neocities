@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import markdown
 import os
+import subprocess
 
 TEMPLATE_FILE = "mbgen2.txt"
 
@@ -10,7 +11,7 @@ class MicroblogGenerator(tk.Tk):
         super().__init__()
         
         self.title("Microblog Generator")
-        self.geometry("600x450")
+        self.geometry("600x500")
         
         self.create_widgets()
         self.load_template()
@@ -40,6 +41,10 @@ class MicroblogGenerator(tk.Tk):
         # Post button
         self.post_button = tk.Button(self, text="Post", command=self.generate_post)
         self.post_button.pack()
+
+        # Upload button
+        self.upload_button = tk.Button(self, text="Upload to Neocities", command=self.upload_to_neocities)
+        self.upload_button.pack()
         
     def load_template(self):
         if os.path.exists(TEMPLATE_FILE):
@@ -77,12 +82,12 @@ class MicroblogGenerator(tk.Tk):
         new_post_div = f'<div class="mbgenPost mbgen{tag}">\n{new_post}\n</div>'
         
         # Prompt user to select HTML file
-        file_path = filedialog.askopenfilename(filetypes=[("HTML files", "*.html")])
+        self.file_path = filedialog.askopenfilename(filetypes=[("HTML files", "*.html")])
         
-        if not file_path:
+        if not self.file_path:
             return
         
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(self.file_path, 'r', encoding='utf-8') as file:
             html_content = file.read()
         
         # Insert the new post
@@ -97,13 +102,24 @@ class MicroblogGenerator(tk.Tk):
         else:
             html_content = html_content.replace("<!--posts here-->", f"<!--posts here-->\n{new_post_div}")
         
-        with open(file_path, 'w', encoding='utf-8') as file:
+        with open(self.file_path, 'w', encoding='utf-8') as file:
             file.write(html_content)
         
         messagebox.showinfo("Success", "Post added successfully!")
         
         # Save the current template
         self.save_template()
+
+    def upload_to_neocities(self):
+        if not hasattr(self, 'file_path') or not self.file_path:
+            messagebox.showerror("Error", "No file has been posted yet.")
+            return
+
+        try:
+            subprocess.Popen('neocities upload ' + self.file_path, shell=True)
+            messagebox.showinfo("Success", f"File '{self.file_path}' uploaded successfully to Neocities!")
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Error", f"Failed to upload file to Neocities: {e}")
 
 if __name__ == "__main__":
     app = MicroblogGenerator()
